@@ -13,6 +13,7 @@ This project is a reverse proxy service for Wasabi S3 storage, built with [Next.
 -   Node.js 18.x or later
 -   pnpm 9.x or later
 -   A Wasabi S3 account with access key and secret key
+-   warning - use readonly acces key and secret key
 
 ## Getting Started
 
@@ -53,7 +54,6 @@ This project is a reverse proxy service for Wasabi S3 storage, built with [Next.
     ```
 
 6. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
 7. http://localhost:3000/[bucket]/[path/to/file]
 
 -   http://localhost:3000/heybro/walls/00000000.png
