@@ -48,9 +48,7 @@ This project is a reverse proxy service for Wasabi S3 storage, built with [Next.
 5. Run the development server:
 
     ```bash
-    npm run dev
-    # or
-    yarn dev
+    pnpm dev
     ```
 
 6. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.

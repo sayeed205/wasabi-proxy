@@ -1,15 +1,28 @@
-import AWS from 'aws-sdk';
+import { S3RequestPresigner } from '@aws-sdk/s3-request-presigner';
+import { formatUrl } from '@aws-sdk/util-format-url';
+import { Hash } from '@smithy/hash-node';
+import { HttpRequest } from '@smithy/protocol-http';
+import { parseUrl } from '@smithy/url-parser';
 import { NextRequest } from 'next/server';
 
-const credentials = new AWS.SharedIniFileCredentials({ profile: 'wasabi' });
+const createPresignedUrlWithoutClient = async (bucket: string, key: string) => {
+    const url = parseUrl(
+        `https://${bucket}.s3.${process.env.WASABI_REGION}.wasabisys.com/${key}`
+    );
+    const presigner = new S3RequestPresigner({
+        credentials: {
+            accessKeyId: process.env.WASABI_ACCESS_KEY_ID!,
+            secretAccessKey: process.env.WASABI_SECRET_ACCESS_KEY!,
+        },
+        region: process.env.WASABI_REGION!,
+        sha256: Hash.bind(null, 'sha256'),
+    });
 
-AWS.config.credentials = credentials;
-AWS.config.credentials.accessKeyId = process.env.WASABI_ACCESS_KEY_ID!;
-AWS.config.credentials.secretAccessKey = process.env.WASABI_SECRET_ACCESS_KEY!;
-AWS.config.region = process.env.WASABI_REGION!;
-
-const ep = new AWS.Endpoint(process.env.WASABI_ENDPOINT || 's3.wasabisys.com');
-const s3 = new AWS.S3({ endpoint: ep });
+    const signedUrlObject = await presigner.presign(
+        new HttpRequest({ ...url, method: 'GET' })
+    );
+    return formatUrl(signedUrlObject);
+};
 
 export async function GET(request: NextRequest) {
     try {
@@ -18,14 +31,8 @@ export async function GET(request: NextRequest) {
         const bucket = pathParts[1];
         const key = pathParts.slice(2).join('/');
 
-        // Generate signed URL
-        const url = s3.getSignedUrl('getObject', {
-            Bucket: bucket,
-            Key: key,
-            Expires: 60 * 3, // URL expires in 3 minutes
-        });
+        const url = await createPresignedUrlWithoutClient(bucket, key);
 
-        console.log('Generated URL:', url);
 
         const response = await fetch(url);
 
@@ -46,8 +53,10 @@ export async function GET(request: NextRequest) {
             },
         });
     } catch (error) {
-        // @ts-expect-error
-        console.error('Error:', error?.message || 'Unknown error');
+        console.error(
+            'Error:',
+            error instanceof Error ? error.message : 'Unknown error',
+        );
 
         return new Response('Internal Server Error', { status: 500 });
     }
