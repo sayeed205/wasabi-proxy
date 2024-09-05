@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
             },
         });
     } catch (error) {
-        // @ts-ignore
+        // @ts-expect-error
         console.error('Error:', error?.message || 'Unknown error');
 
         return new Response('Internal Server Error', { status: 500 });
